@@ -281,6 +281,7 @@ class Card:
     # resources is the list of resources
     def __init__(self, resources):
         self.resources = resources
+        self.draw_highlighted = False
 
     def get_borders(self, orient):
         result = defaultdict(dict)
@@ -534,6 +535,14 @@ class Board:
     def find_monastery(self, xy):
         return self.monasteries.get(xy)
 
+    # TODO find hovered card
+    def find_highlighted_card(self):
+        # k = list(self.cards)[0]
+        # c = self.cards[k]
+        # k,c = self.cards.itervalues().next()
+        c,k = self.cards.items()[0] # just get any card
+        return k, c
+        
 
 east_side = ('e', (0,1))
 north_side = ('n', (0,1))
