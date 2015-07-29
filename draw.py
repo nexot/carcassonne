@@ -34,13 +34,17 @@ def rotate(pts, orient, center):
         x0,y0 = pts
         return rot(x0-cx,y0-cy,orient)
 
-
 # FIXME: this last arg is a hack
 def draw_card(card, orient, topleft):
     dxdy = topleft
 
-    pygame.draw.rect(screen, (0,180,0), pygame.Rect(0,0,100,100).move(*dxdy))
+    # wanna make a highlighted
+    if card.draw_highlighted:
+        pygame.draw.rect(screen, (200,200,255), pygame.Rect(0,0,100,100).move(*dxdy))
+    else:
+        pygame.draw.rect(screen, (0,180,0), pygame.Rect(0,0,100,100).move(*dxdy))
 
+    
     # want to draw roads first -- so the monasteries and castles are drawn on top
     for fragment in sorted(card.resources, key=lambda r: -ord(r.code())):
         if fragment.code() == 'c':
@@ -129,7 +133,7 @@ def draw_card(card, orient, topleft):
                              10)
             if len(fragment.sides) == 1:
                 pygame.draw.rect(screen, (0,0,0), pygame.Rect(44,44,12,12).move(*dxdy))
-
+            
 
 def draw():
     pygame.draw.rect(screen, (255,255,255), pygame.Rect(0,0,*screen_size))
@@ -188,20 +192,24 @@ class App:
         self.orient = 0
 
         self.draw_shadow = True
+        
 
     def board_to_screen_coords(self, (x,y)):
         card_left = 100 + 100*x + self.cx
         card_top = 300 - 100*y + self.cy
         return (card_left,card_top)
 
-
     def redraw(self):
         pygame.draw.rect(self.screen, (255,255,255), pygame.Rect(0,0,*self.screen_size))
         self.draw_board()
         card_left, card_top = self.board_to_screen_coords(self.cell_coords)
+        print(card_left, card_top, self.cell_coords) # i'd like to see it
         if self.draw_shadow:
-            pygame.draw.rect(self.screen, self.shadow_color(), (card_left, card_top, 100,100))
-            draw_card(self.card, self.orient, (card_left-10, card_top-10))
+			# playing with rect
+            # pygame.draw.rect(self.screen, self.shadow_color(), (card_left, card_top, 100,100))
+            pygame.draw.rect(self.screen, self.shadow_color(), (card_left -5, card_top -5, 110,110))
+            # draw_card(self.card, self.orient, (card_left-10, card_top-10))
+            draw_card(self.card, self.orient, (card_left, card_top))
         else:
             draw_card(self.card, self.orient, (card_left, card_top))
 
@@ -223,6 +231,7 @@ class App:
     def draw_board(self):
         for xy,(card,orient) in self.board.cards.items():
             draw_card(card, orient, self.board_to_screen_coords(xy))
+            print xy, card.draw_highlighted
 
 
     def shadow_color(self):
@@ -244,17 +253,19 @@ class App:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     return
-                elif event.type == pygame.VIDEORESIZE:
+                elif event.type == pygame.VIDEORESIZE: # strange behavior
                     self.screen_size = event.w,event.h
                     self.screen = pygame.display.set_mode(screen_size, pygame.RESIZABLE)
                 elif event.type == pygame.MOUSEMOTION:
                     dx,dy = event.rel
                     if mouse_down:
                         self.cx += dx
-                        self.cy += dy
+                        self.cy += dy                        
                     else:
-                        x,y = event.pos
+                        x,y = event.pos                     
+                        
                         self.cell_coords = (x - self.cx) /100 - 1, 2 - ((y - self.cy)/100 - 1)
+                        print x,y, self.cell_coords, self.board.cards.get(self.cell_coords) ## i'd like to see it
                     self.redraw()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 3:
@@ -271,6 +282,12 @@ class App:
                         self.orient = (self.orient + 1) % 4
                     if event.key == pygame.K_SPACE:
                         self.next_card()
+                    if event.key == pygame.K_h:
+                        # TODO: make an individual card to highlight
+                        (card0,orient0) = self.board.cards.get(self.cell_coords)
+                        card0.draw_highlighted = not card0.draw_highlighted
+                        print x,y, self.cell_coords, self.board.cards.get(self.cell_coords) ## i'd like to see it
+                        print card0,orient0
                     self.redraw()
 
             pygame.display.flip()
